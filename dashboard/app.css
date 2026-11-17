@@ -1,6 +1,7 @@
-/* Token Radar's theme, radar-2. Five palette values, two radii, two families: everything else is
+/* Token Radar's theme, radar-3. Five palette values, two radii, two families: everything else is
    spacing, a hairline and a type step. The board is the page: one table, one detail panel, one
-   model note. */
+   model note. The detail's equation reads top to bottom as the arithmetic runs: TVL, the category
+   multiple, the base value they make, then the growth, maturity and breadth multipliers. */
 :root {
   --canvas: #eef2ef;
   --surface: #ffffff;
@@ -124,7 +125,7 @@ tbody tr.top3 td:first-child { font-weight: 700; color: var(--gold); }
 .detail {
   position: fixed; top: 0; right: 0; bottom: 0; width: min(540px, 94vw); z-index: 10;
   background: var(--surface); border-left: 1px solid var(--border); padding: var(--step-5);
-  overflow-y: auto; margin: 0 0 0 auto; max-height: 100%;
+  overflow-y: auto; overscroll-behavior: contain; margin: 0 0 0 auto; max-height: 100%;
 }
 .detail::backdrop { background: rgba(20, 32, 26, 0.28); }
 .detail-head { display: flex; align-items: start; justify-content: space-between; gap: var(--step-4); }
@@ -138,6 +139,9 @@ tbody tr.top3 td:first-child { font-weight: 700; color: var(--gold); }
 .equation { display: grid; gap: var(--step-2); font-family: var(--font-num); font-size: 13px; }
 .equation div { display: flex; justify-content: space-between; gap: var(--step-3); }
 .equation span { color: var(--muted); }
+.equation .base { border-top: 1px solid var(--border); padding-top: var(--step-2); }
+.equation .base span { color: var(--ink); font-weight: 600; }
+.equation .base b { font-size: 14px; }
 .equation .total { border-top: 1px solid var(--border); padding-top: var(--step-2); }
 .equation .total b { font-size: 15px; }
 .steps { margin: 0; padding-left: var(--step-5); display: grid; gap: var(--step-3); }

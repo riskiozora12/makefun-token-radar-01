@@ -3,6 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
 <title>Token Radar: pre-token protocols ranked by implied value</title>
 <meta name="description" content="A radar for token launches: every pre-token protocol in the DefiLlama snapshot, ranked by an implied value derived from its own TVL, growth, age and category multiple, with a farm plan for each.">
 <link rel="icon" href="data:,">
@@ -10,7 +11,9 @@
 </head>
 <body>
 <a class="skip" href="#board">Skip to the board</a>
-<main id="board" tabindex="-1" aria-busy="true"></main>
+<main id="board" tabindex="-1" aria-busy="true" aria-live="polite">
+<noscript><p style="padding:24px;font:400 15px/1.5 system-ui,sans-serif">Token Radar needs JavaScript: the board, its filters and every protocol's detail view are rendered in this page from the snapshot data beside it. Enable JavaScript and reload.</p></noscript>
+</main>
 <script src="../data.js"></script>
 <script src="app.js"></script>
 </body>

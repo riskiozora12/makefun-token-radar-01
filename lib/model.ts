@@ -1,4 +1,4 @@
-// The token radar's model, radar-2: one snapshot of the protocol universe in, one ranked board out.
+// The token radar's model, radar-3: one snapshot of the protocol universe in, one ranked board out.
 //
 // The board ranks every protocol in the snapshot that can plausibly issue a token of its own: the
 // whole watchlist (the floor, never a ceiling) plus every other rankable pre-token protocol below
@@ -19,7 +19,12 @@
 //   growthMult = 1 + (growth / 100) x GROWTH_WEIGHT
 //   maturity   = MATURITY_FLOOR + min(age_days, MATURITY_DAYS) / MATURITY_DAYS x MATURITY_RANGE
 //                (age_days unknown: UNKNOWN_AGE_DAYS — how long it has run with no token)
-//   breadth    = 1 + BREADTH_PER_CHAIN x min(chains - 1, BREADTH_MAX)
+//   breadth    = min(BREADTH_MAX_MULT, 1 + BREADTH_LOG_STEP x log2(max(chains, 1)))
+//                — a diminishing-returns curve, not a line: the old linear factor
+//                1 + 0.05 x min(chains - 1, 4) stopped at 5 chains, and 34 of the 198 ranked
+//                protocols run on 5 or more chains (the widest on 45), so a sixth of the board
+//                shared one breadth value and reach stopped counting. log2 keeps rewarding
+//                reach while flattening, and the cap bounds the factor at 1.40.
 //   implied    = max(1, round(tvl_usd x multiple x growthMult x maturity x breadth))
 //
 // No protocol name is ever special-cased: the same function scores every row, and the dashboard
@@ -57,8 +62,8 @@ export interface ModelConstants {
   maturity_range: number;
   maturity_days: number;
   unknown_age_days: number;
-  breadth_per_chain: number;
-  breadth_max: number;
+  breadth_log_step: number;
+  breadth_max_mult: number;
   multiple_floor: number;
   multiple_cap: number;
   multiple_min_live: number;
@@ -72,15 +77,15 @@ export const MODEL: ModelConstants = {
   maturity_range: 0.45,
   maturity_days: 1460,
   unknown_age_days: 365,
-  breadth_per_chain: 0.05,
-  breadth_max: 4,
+  breadth_log_step: 0.08,
+  breadth_max_mult: 1.4,
   multiple_floor: 0.05,
   multiple_cap: 1.0,
   multiple_min_live: 3,
 };
 
 /** The model's version label: the dashboard names it and the rules quote it. */
-export const MODEL_VERSION = 'radar-2';
+export const MODEL_VERSION = 'radar-3';
 
 /** How many live-token protocols the Live token view carries, by market cap. */
 export const LIVE_ROWS = 24;
@@ -135,6 +140,7 @@ export interface RadarRow {
   implied_value_usd: number;
   category_multiple: number;
   multiple_live_n: number;
+  growth_pct: number;
   growth_multiplier: number;
   maturity_multiplier: number;
   breadth_multiplier: number;
@@ -274,6 +280,11 @@ export function multipleFor(
   return { multiple: multiples.global, liveN: 0 };
 }
 
+/** The breadth factor for a protocol on `chains` chains: reach pays at a flattening rate. */
+export function breadthMultiplier(chains: number, model: ModelConstants): number {
+  return Math.min(model.breadth_max_mult, 1 + model.breadth_log_step * Math.log2(Math.max(chains, 1)));
+}
+
 /** The multipliers and the implied value one protocol gets under `model`. */
 export function impliedValue(
   protocol: SnapshotProtocol,
@@ -291,7 +302,7 @@ export function impliedValue(
   const growthMult = 1 + (growthPct / 100) * model.growth_weight;
   const ageForModel = age ?? model.unknown_age_days;
   const maturityMult = model.maturity_floor + (Math.min(Math.max(ageForModel, 0), model.maturity_days) / model.maturity_days) * model.maturity_range;
-  const breadthMult = 1 + model.breadth_per_chain * Math.min(Math.max(protocol.chains.length - 1, 0), model.breadth_max);
+  const breadthMult = breadthMultiplier(protocol.chains.length, model);
   const implied = Math.max(1, Math.round(protocol.tvl_usd * multiple * growthMult * maturityMult * breadthMult));
   return { implied, multiple, liveN, growthPct, growthMult, maturityMult, breadthMult, age };
 }
@@ -523,6 +534,7 @@ export function radarRow(row: BoardRow): RadarRow {
     implied_value_usd: row.implied_value_usd,
     category_multiple: row.model.category_multiple,
     multiple_live_n: row.model.multiple_live_n,
+    growth_pct: row.model.growth_pct,
     growth_multiplier: row.model.growth_multiplier,
     maturity_multiplier: row.model.maturity_multiplier,
     breadth_multiplier: row.model.breadth_multiplier,
